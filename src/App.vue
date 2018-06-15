@@ -17,23 +17,23 @@
         <th>ID <a href="#" @click.prevent="sortBy('id')">&#8661;</a></th>
         <th>Name <a href="#" @click.prevent="sortBy('name')">&#8661;</a></th>
         <th>Qty <a href="#" @click.prevent="sortBy('qty')">&#8661;</a></th>
-        <th>Availability <a href="#" @click.prevent="sortBy('availbl')">&#8661;</a></th>
+        <th>Availability <a href="#" @click.prevent="sortBy('avail')">&#8661;</a></th>
         <th>Delete</th>
       </tr>
     </thead>
     <tbody>
-      <tr v-for="(item, index) in currentList" :key="index">
+      <tr v-for="(item, index) in products" :key="index">
         <th scope="row">{{ item.id }}</th>
         <td>{{ item.name }}</td>
         <td>{{ item.qty }}</td>
-        <td>{{ item.availbl }}</td>
-        <td><button type="button" class="btn btn-default" @click="deleteItem(index)">X</button></td>
+        <td>{{ item.avail }}</td>
+        <td><button type="button" class="btn btn-default btn-sm" @click="deleteItem(index)">X</button></td>
       </tr>
     </tbody>
   </table>
-  <ul class="pagination pagination-sm" v-if="products.length > 10">
-    <li class="page-item" :class="[currentPage === page ? 'active' : '']" v-for="page in pages">
-      <a class="page-link" href="#" @click.prevent="currentPage = page">{{ page }}</a>
+  <ul class="pagination pagination-sm" v-if="this.$store.state.products.length > 10">
+    <li class="page-item" :class="{active: currentPage === page }" v-for="page in pages" :key="page">
+      <a class="page-link" href="#" @click.prevent="setPage(page)">{{ page }}</a>
     </li>
   </ul>
 
@@ -66,7 +66,7 @@
        <div class="col-sm-2">
           <div class="form-group">
             <div class="checkbox">
-              <br/><label><input type="checkbox" checked v-model="newProduct.availbl"> {{ newProduct.availbl ? 'Available' : 'Not available' }}</label>
+              <br/><label><input type="checkbox" checked v-model="newProduct.avail"> {{ newProduct.avail ? 'Available' : 'Not available' }}</label>
             </div>
           </div>
         </div>
@@ -103,79 +103,76 @@ export default {
   name: 'app',
   data () {
     return {
-      products: [],
       newProduct: {
         id: 1,
         name: '',
         qty: null,
         availbl: true
       },
-      currentPage: 1,
       isNewRowShown: false,
       isExportDataShown: false,
-      isAvailable: true,
-      initStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-      sortedColumn: ''
+      isAvailable: true
     }
   },
   computed: {
-    pages() {
-      return Math.ceil(this.products.length / 10);
+    products() {
+      return this.$store.getters.currentPageContent;
     },
-    currentList() {
-      var currentIndex = this.currentPage * 10 - 9;
-      return this.products.slice(currentIndex, currentIndex + 10)
+    pages() {
+      return this.$store.getters.pages;
+    },
+    currentPage() {
+      return this.$store.state.currentPage;
     }
   },
   methods: {
-    getRandom: function(minim, maxim) {
+    getRandom (minim, maxim) {
       let min = Math.ceil(minim),
           max = Math.floor(maxim);
       return Math.floor(Math.random() * (max - min + 1)) + min;
     },
-    getRandString: function() {
-      let finalStr = "";
-      for (let i = 0, len = this.getRandom(3, 10); i < len; i++) {
-        let randLetter = this.getRandom(0, this.initStr.length);
-        finalStr += this.initStr[randLetter];
-      };
-      return finalStr;
-    },
-    addRandomContent() {
+    addRandomContent () {
+      let randomContent = [];
       let randomeRowsNum = this.getRandom(1, 10);
 
       for (let i = 0; i < randomeRowsNum; i++) {
-        let randomAvail   = this.getRandom(0, 1)) ? "yes" : "no";
-        let randomQty     = this.getRandom(0, 1000);
-        let randomName    = this.getRandString();
         let newDataSet = {
-          id: this.newProduct.id,
-          name: randomName,
-          qty: randomQty,
-          availbl: randomAvail
+          id: Math.random().toString(36).substr(2, 4),
+          name: Math.random().toString(36).substr(2, 9),
+          qty: this.getRandom(0, 1000),
+          avail: this.getRandom(0, 1) ? true : false
         };
-        this.products.push(newDataSet);
-        this.newProduct.id++;
+        randomContent.push(newDataSet);
       };
+      this.$store.commit('addRandomContent', randomContent);
     },
+
+    // Add new item to table via Add New Row
     addDataToTable() {
-      const createProduct = JSON.parse(JSON.stringify(this.newProduct));
-      this.products.push(createProduct);
-      this.newProduct.id++;
+      this.newProduct.id = Math.random().toString(36).substr(2, 4);
+      this.$store.commit('addProducts', this.newProduct);
+      // Clear form
+      this.newProduct = { name: '', qty: null, availbl: true };
     },
+
+    // Delete single item from table
     deleteItem(index) {
-      this.products.splice(index, 1);
+      this.$store.commit('removeProduct', index);
     },
+
+    // Clear whole store
     clearTable() {
-      this.products = [];
+      this.$store.commit('clearProducts');
     },
+    
+    // Set pagination page 
+    setPage(pageNo) {
+      this.$store.commit('setPaginationPage', pageNo);
+    },
+    
+    // Add sorting by column
     sortBy(type) {
-      if (this.sortedColumn === type) {
-        this.products.reverse();
-      } else {
-        this.products.sort((a, b) => a[type] > b[type] ? 1 : -1 );
-        this.sortedColumn = type;
-      }
+      this.$store.commit('sortByType', type);
     },
     searchQuery(value) {
       this.products.filter((product) => {

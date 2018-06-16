@@ -1,12 +1,12 @@
 <template>
   <div class="container" id="app">
-  <h2>Product List</h2>
+  <h2>Product List <small class="text-success">Sample table with common functionality</small></h2>
 
   <form class="form-horizontal">
     <div class="form-group">
       <label for="filterName" class="col-lg-2 control-label">Filter by name</label>
       <div class="col-lg-3">
-        <input type="text" class="form-control" placeholder="Enter name" @keyup="searchQuery">
+        <input type="text" class="form-control" placeholder="Enter name" @input="filterByName">
       </div>
     </div>
   </form>
@@ -27,11 +27,11 @@
         <td>{{ item.name }}</td>
         <td>{{ item.qty }}</td>
         <td>{{ item.avail }}</td>
-        <td><button type="button" class="btn btn-default btn-sm" @click="deleteItem(index)">X</button></td>
+        <td><button type="button" class="btn btn-default btn-sm" @click="deleteItem(index)" >X</button></td>
       </tr>
     </tbody>
   </table>
-  <ul class="pagination pagination-sm" v-if="this.$store.state.products.length > 10">
+  <ul class="pagination pagination-sm" v-if="pages > 1">
     <li class="page-item" :class="{active: currentPage === page }" v-for="page in pages" :key="page">
       <a class="page-link" href="#" @click.prevent="setPage(page)">{{ page }}</a>
     </li>
@@ -43,7 +43,7 @@
     <a href="#" class="btn btn-warning" @click.prevent="clearTable">Clear table</a>
     <a href="#" class="btn btn-danger" :class="{active: isExportDataShown}" @click.prevent="isExportDataShown = !isExportDataShown">Export table</a>
   </div>
-<br/>
+<br/><br/>
 
 <form v-if="isNewRowShown">
   <fieldset>
@@ -81,20 +81,21 @@
     <fieldset>
       <legend>Export / import table data</legend>
       <div class="row">
-        <div class="col-md-10 col-sm-8">
+        <div class="col-md-8">
           <div class="form-group">
             <label class="col-lg-2 control-label">Data</label>
-              <textarea class="form-control" rows="3"></textarea>
+              <textarea class="form-control" rows="3" v-model="importedData"></textarea>
           </div>
         </div>
-        <div class="col-md-2 col-sm-4">
+        <div class="col-md-4">
           <br/>
-          <button type="submit" class="btn btn-success  btn-block">Import data from table</button>
-          <button type="submit" class="btn btn-info  btn-block">Export data to table</button>
+          <button class="btn btn-success  btn-block" @click.prevent="importData">Import data from table</button>
+          <button class="btn btn-info  btn-block" @click.prevent="exportData(importedData)">Export data to table</button>
         </div>
       </div>
     </fieldset>
   </form>
+  <br/><br/>  
 </div>
 </template>
 
@@ -111,7 +112,8 @@ export default {
       },
       isNewRowShown: false,
       isExportDataShown: false,
-      isAvailable: true
+      isAvailable: true,
+      importedData: ''
     }
   },
   computed: {
@@ -131,6 +133,8 @@ export default {
           max = Math.floor(maxim);
       return Math.floor(Math.random() * (max - min + 1)) + min;
     },
+
+    // Create and add randome content to table
     addRandomContent () {
       let randomContent = [];
       let randomeRowsNum = this.getRandom(1, 10);
@@ -174,10 +178,20 @@ export default {
     sortBy(type) {
       this.$store.commit('sortByType', type);
     },
-    searchQuery(value) {
-      this.products.filter((product) => {
-        return product.name.indexOf(value) !== -1;
-      });
+
+    // Filter list by product name
+    filterByName(e) {
+      this.$store.commit('filterByName', e.target.value);
+    },
+
+    // Import data from Vuex state to form field
+    importData() {
+      this.importedData = JSON.stringify(this.$store.state.products);
+    },
+
+    // Export data from field to table
+    exportData(data) {
+      this.$store.commit('addRandomContent', JSON.parse(data));
     }
   }
 }

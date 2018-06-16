@@ -13,6 +13,7 @@ export default new Vuex.Store({
             {id: 5, name: 'sasdaads', qty: 7, avail: false},
             {id: 6, name: 'vbnvnvbnv', qty: 8, avail: true}
         ],
+        filteredProducts: [],
         currentPage: 1,
         sortedColumn: ''
     },
@@ -22,6 +23,7 @@ export default new Vuex.Store({
         },
         removeProduct(state, index) {
             state.products.splice(index, 1);
+            state.filteredProducts.splice(index, 1);
         },
         clearProducts(state) {
             state.products = [];
@@ -33,22 +35,36 @@ export default new Vuex.Store({
             state.currentPage = pageNo;
         },
         sortByType(state, type) {
+            let sortedArr = (state.filteredProducts.length) ? state.filteredProducts : state.products;
             if (state.sortedColumn === type) {
-                state.products.reverse();
+                sortedArr.reverse();
             } else {
-                state.products.sort((a, b) => a[type] > b[type] ? 1 : -1 );
+                sortedArr.sort((a, b) => a[type] > b[type] ? 1 : -1 );
                 state.sortedColumn = type;
             }
+        },
+        filterByName(state, value) {
+            if (value == '' || value == ' ') {
+                state.filteredProducts = [];
+                return;
+            }
+            state.currentPage = 1;
+            state.filteredProducts = state.products.filter((product) => {
+                return product.name.indexOf(value) !== -1;
+            });
         }
     },
     getters: {
         pages(state) {
-            return Math.ceil(state.products.length / 10);
+            return (state.filteredProducts.length) ? Math.ceil(state.filteredProducts.length / 10) : Math.ceil(state.products.length / 10);
+        },
+        filteredProducts(state) {
+            return state.filteredProducts;
         },
         currentPageContent(state) {
             let start = +state.currentPage * 10 - 10;
             let end = +state.currentPage * 10;
-            return state.products.slice(start, end);
+            return (state.filteredProducts.length) ? state.filteredProducts.slice(start, end) : state.products.slice(start, end);
         }
     },
     actions: {
